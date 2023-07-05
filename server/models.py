@@ -2,12 +2,13 @@
 from flask_sqlalchemy import SQLAlchemy
 
 # 6. Import `SerializerMixin` from `sqlalchemy_serializer`
+from sqlalchemy_serializer import SerializerMixin
 
 # Initialize our db
 db = SQLAlchemy()
 
 # 7. Pass `SerializerMixin` to your model(s)
-class Service(db.Model):
+class Service(db.Model, SerializerMixin):
     __tablename__ = 'services'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,12 +22,13 @@ class Service(db.Model):
 
     # 7.1 Create a serialize rule that will help add our shows to the services response
         # This is a tuple, so if there's only one item, you need the trailing comma or it will yell
+    # serialize_rules = ('-shows.service',)
 
     def __repr__(self):
         return f"<Service Name: {self.name}, Price: ${self.price}>"
 
 # NOTE added this between day 1 and day 2
-class Show(db.Model):
+class Show(db.Model, SerializerMixin):
     __tablename__ = 'shows'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -38,8 +40,10 @@ class Show(db.Model):
     service_id = db.Column(db.Integer, db.ForeignKey('services.id'))
 
     # 8. Create a serialize rule that will add our 'service' to the shows response
+    # serialize_only = ('name', 'seasons')
+    serialize_rules = ('-service.shows',)
 
     def __repr__(self):
-        return f'<Show Name: {self.name}, seasons: ${self.seasons}>'
+        return f'<Show Name: {self.name}, seasons: {self.seasons}>'
 
 # 9. back to app.py to implement

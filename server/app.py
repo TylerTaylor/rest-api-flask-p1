@@ -35,6 +35,7 @@ from flask import Flask, jsonify, make_response, request
 from flask_migrate import Migrate
 
 # 1. Import `Api` and `Resource` from `flask_restful`
+from flask_restful import Api, Resource
 
 from models import db, Service, Show
 
@@ -49,8 +50,9 @@ db.init_app(app)
 
 # 2. Initialize the Api
     # api = Api(app)
+api = Api(app)
 
-# 3. Create a Service class that inherits from Resource
+# 3. Create a Services class that inherits from Resource
 
 # 4. Create a GET (all) Route (aka "index" route)
     # 4.1 Make a `get` method that takes `self` as a param
@@ -61,7 +63,60 @@ db.init_app(app)
     # 4.5 Return `response`
     # 4.6 Test in browser
 
+class Services(Resource):
+    def get(self):
+        # services_list = [{
+        #     "name": service.name,
+        #     "price": service.price
+        # } for service in Service.query.all()]
+        services_list = [service.to_dict() for service in Service.query.all()]
+
+        response = make_response(services_list, 200)
+        return response
+
+    def post(self):
+        # import ipdb; ipdb.set_trace()
+        # get the data from the form
+        request_json = request.get_json()
+        new_service = Service(
+            name=request_json['name'], 
+            price=request_json['price']
+        )
+
+        # add the new data to our database
+        db.session.add(new_service)
+        # commit
+        db.session.commit()
+
+        # return a response
+        response = make_response(new_service.to_dict(), 201)
+        return response
+
 # 5. Add the new route to our api - `api.add_resource`
+api.add_resource(Services, '/services')
+
+class Shows(Resource):
+    def get(self):
+        shows_list = [show.to_dict() for show in Show.query.all()]
+
+        response = make_response(shows_list, 200)
+        return response
+
+    def post(self):
+        request_json = request.get_json()
+        new_show = Show(
+            name=request_json["name"], 
+            seasons=request_json["seasons"], 
+            service_id=request_json["service_id"]
+        )
+
+        db.session.add(new_show)
+        db.session.commit()
+
+        response = make_response(new_show.to_dict(), 201)
+        return response
+
+api.add_resource(Shows, '/shows')
 
 # 6. Serialization
     # steps 6-9 in models.py
@@ -77,10 +132,28 @@ db.init_app(app)
     # 11.2 Create a `get` method and pass in the id along with `self`
     # 11.3 Make a query for a service by the `id` and build a response to send to the browser/client
 
+class ServiceById(Resource):
+    def get(self, id):
+        service = Service.query.filter(Service.id == id).first()
+
+        # response = make_response(service.to_dict(), 200)
+        # return response
+        return make_response(service.to_dict(), 200)
+
 # 12. Add the new route to our api - `api.add_resource`
+api.add_resource(ServiceById, '/services/<int:id>')
+
+class ShowById(Resource):
+    def get(self, id):
+        show = Show.query.filter(Show.id == id).first()
+
+        response = make_response(show.to_dict(), 200)
+        return response
+
+api.add_resource(ShowById, '/shows/<int:id>')
 
 # 13. Create a POST Route
-    # We'll use Postman to create a POST request. In the `Body` tab, select `form-data` and fill out the body 
+    # We'll use Postman to create a POST request. In the `Body` tab, select `raw` and fill out the body 
     # with a service we want to create
 
     # Create the POST route
